@@ -23,6 +23,12 @@ Thumbs.db
 .env.*
 .supabase
 
+# Vercel
+.vercel
+
+# Supabase CLI temp artifacts
+supabase/.temp/
+
 # Editor
 .vscode/
 .idea/

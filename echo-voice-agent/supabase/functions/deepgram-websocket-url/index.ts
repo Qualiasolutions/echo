@@ -28,20 +28,72 @@ serve(async (req) => {
       );
     }
 
-    // Build WebSocket URL for Deepgram streaming
-    const wsUrl = `wss://api.deepgram.com/v1/listen?` +
-      `model=nova-2&` +
-      `punctuate=true&` +
-      `smart_format=true&` +
-      `interim_results=true&` +
-      `encoding=linear16&` +
-      `sample_rate=16000&` +
-      `channels=1`;
+    // Request an ephemeral Deepgram token so the browser never sees the master API key
+    const response = await fetch('https://api.deepgram.com/v1/listen', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'nova-2',
+        encoding: 'linear16',
+        sample_rate: 16000,
+        channels: 1,
+        punctuate: true,
+        smart_format: true,
+        interim_results: true,
+        // Deepgram defaults TTL to 60 seconds; adjust here if needed.
+      }),
+    });
 
-    // Return URL with authentication header
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Deepgram token request failed:', response.status, errorBody);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to generate Deepgram token',
+          wsUrl: null,
+          success: false
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const { key: ephemeralKey, expires_at: expiresAt } = await response.json();
+
+    if (!ephemeralKey) {
+      console.error('Deepgram response missing ephemeral key');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Deepgram token generation returned no key',
+          wsUrl: null,
+          success: false
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const wsUrl = new URL('wss://api.deepgram.com/v1/listen');
+    wsUrl.searchParams.set('model', 'nova-2');
+    wsUrl.searchParams.set('punctuate', 'true');
+    wsUrl.searchParams.set('smart_format', 'true');
+    wsUrl.searchParams.set('interim_results', 'true');
+    wsUrl.searchParams.set('encoding', 'linear16');
+    wsUrl.searchParams.set('sample_rate', '16000');
+    wsUrl.searchParams.set('channels', '1');
+    wsUrl.searchParams.set('token', ephemeralKey);
+
     return new Response(
       JSON.stringify({
-        wsUrl: `${wsUrl}&token=${DEEPGRAM_API_KEY}`,
+        wsUrl: wsUrl.toString(),
+        expiresAt,
         success: true,
       }),
       {
