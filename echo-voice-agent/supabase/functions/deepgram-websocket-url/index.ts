@@ -28,22 +28,66 @@ serve(async (req) => {
       );
     }
 
+    // Discover the project id needed for temporary key creation
+    const projectRes = await fetch('https://api.deepgram.com/v1/projects', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+      },
+    });
+
+    if (!projectRes.ok) {
+      const errorBody = await projectRes.text();
+      console.error('Deepgram project lookup failed:', projectRes.status, errorBody);
+      return new Response(
+        JSON.stringify({
+          error: 'Failed to fetch Deepgram project metadata',
+          details: errorBody,
+          wsUrl: null,
+          success: false,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const projectJson = await projectRes.json();
+    const projectId =
+      projectJson?.projects?.[0]?.project_id ??
+      projectJson?.projects?.[0]?.id ??
+      projectJson?.project_id ??
+      projectJson?.id;
+
+    if (!projectId) {
+      console.error('Unable to determine Deepgram project ID from response:', projectJson);
+      return new Response(
+        JSON.stringify({
+          error: 'Deepgram project metadata missing project_id',
+          details: JSON.stringify(projectJson),
+          wsUrl: null,
+          success: false,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Request an ephemeral Deepgram token so the browser never sees the master API key
-    const response = await fetch('https://api.deepgram.com/v1/listen', {
+    const response = await fetch(`https://api.deepgram.com/v1/projects/${projectId}/keys`, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${DEEPGRAM_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'nova-2',
-        encoding: 'linear16',
-        sample_rate: 16000,
-        channels: 1,
-        punctuate: true,
-        smart_format: true,
-        interim_results: true,
-        // Deepgram defaults TTL to 60 seconds; adjust here if needed.
+        comment: 'Echo browser session',
+        type: 'temporary',
+        ttl: 60,
+        scopes: ['usage:write'],
       }),
     });
 
@@ -53,6 +97,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Failed to generate Deepgram token',
+          details: errorBody,
           wsUrl: null,
           success: false
         }),
@@ -63,7 +108,18 @@ serve(async (req) => {
       );
     }
 
-    const { key: ephemeralKey, expires_at: expiresAt } = await response.json();
+    const tokenJson = await response.json();
+    const ephemeralKey =
+      tokenJson?.key ??
+      tokenJson?.api_key ??
+      tokenJson?.api_key?.key ??
+      tokenJson?.secret ??
+      null;
+    const expiresAt =
+      tokenJson?.expires_at ??
+      tokenJson?.expiresAt ??
+      tokenJson?.expiration ??
+      null;
 
     if (!ephemeralKey) {
       console.error('Deepgram response missing ephemeral key');
