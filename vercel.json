@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "installCommand": "cd echo-voice-agent && corepack pnpm install --frozen-lockfile",
+  "buildCommand": "cd echo-voice-agent && corepack pnpm run build",
+  "outputDirectory": "echo-voice-agent/dist"
+}
