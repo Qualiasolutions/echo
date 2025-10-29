@@ -38,7 +38,7 @@ export default function useDeepgramWebSocket({
         throw new Error('No WebSocket URL received from server');
       }
 
-      console.log('WebSocket URL received:', data.wsUrl);
+      console.log('WebSocket URL received from server');
 
       // Create WebSocket connection
       const ws = new WebSocket(data.wsUrl);

@@ -84,7 +84,7 @@ export const useVoice = () => {
               return;
             }
 
-            console.log('WebSocket URL received:', data.wsUrl);
+            console.log('WebSocket URL received from server');
             const ws = new WebSocket(data.wsUrl);
             wsRef.current = ws;
 
