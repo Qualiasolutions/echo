@@ -144,11 +144,11 @@ serve(async (req) => {
     wsUrl.searchParams.set('encoding', 'linear16');
     wsUrl.searchParams.set('sample_rate', '16000');
     wsUrl.searchParams.set('channels', '1');
-    wsUrl.searchParams.set('token', ephemeralKey);
 
     return new Response(
       JSON.stringify({
         wsUrl: wsUrl.toString(),
+        token: ephemeralKey,
         expiresAt,
         success: true,
       }),

@@ -73,19 +73,19 @@ export const useVoice = () => {
               return;
             }
 
-            if (!data?.wsUrl) {
-              console.error('No WebSocket URL received:', data);
+            if (!data?.wsUrl || !data?.token) {
+              console.error('No WebSocket URL/token received:', data);
               if (retryCount < maxRetries) {
                 retryCount++;
                 setTimeout(attemptConnection, 1000 * retryCount);
                 return;
               }
-              reject(new Error('No WebSocket URL received from server'));
+              reject(new Error('No WebSocket credentials received from server'));
               return;
             }
 
             console.log('WebSocket URL received from server');
-            const ws = new WebSocket(data.wsUrl);
+            const ws = new WebSocket(data.wsUrl, ['token', data.token]);
             wsRef.current = ws;
 
             let connectionTimeout;

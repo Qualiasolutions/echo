@@ -33,15 +33,15 @@ export default function useDeepgramWebSocket({
         throw new Error(`Edge function error: ${error.message}`);
       }
 
-      if (!data?.wsUrl) {
-        console.error('No WebSocket URL received:', data);
-        throw new Error('No WebSocket URL received from server');
+      if (!data?.wsUrl || !data?.token) {
+        console.error('No WebSocket URL/token received:', data);
+        throw new Error('No WebSocket credentials received from server');
       }
 
       console.log('WebSocket URL received from server');
 
       // Create WebSocket connection
-      const ws = new WebSocket(data.wsUrl);
+      const ws = new WebSocket(data.wsUrl, ['token', data.token]);
       wsRef.current = ws;
 
       ws.onopen = () => {

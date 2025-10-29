@@ -63,8 +63,11 @@ export const useVoice = () => {
         }
       );
 
-      const { wsUrl } = await response.json();
-      const ws = new WebSocket(wsUrl);
+      const { wsUrl, token } = await response.json();
+      if (!wsUrl || !token) {
+        throw new Error('Deepgram credentials missing from response');
+      }
+      const ws = new WebSocket(wsUrl, ['token', token]);
       wsRef.current = ws;
 
       ws.onopen = () => {
