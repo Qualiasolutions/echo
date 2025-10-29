@@ -1,0 +1,29 @@
+# Node.js / pnpm
+node_modules/
+.pnpm-store/
+.pnpm/
+
+# Build outputs
+**/dist/
+**/.vite/
+**/.next/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+.supabase
+
+# Editor
+.vscode/
+.idea/
+*.swp
